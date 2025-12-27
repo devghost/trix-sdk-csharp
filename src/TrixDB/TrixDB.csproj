@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- NuGet Package Metadata -->
+    <PackageId>TrixDB</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>TrixDB Team</Authors>
+    <Company>TrixDB</Company>
+    <Product>TrixDB SDK for .NET</Product>
+    <Description>Official .NET SDK for TrixDB - A memory and knowledge management API</Description>
+    <PackageTags>trixdb;memory;knowledge;graph;api;sdk</PackageTags>
+    <PackageProjectUrl>https://github.com/trixdb/trix-sdk-csharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/trixdb/trix-sdk-csharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Copyright>Copyright (c) TrixDB 2025</Copyright>
+
+    <!-- Build Settings -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+
+    <!-- Assembly Info -->
+    <AssemblyName>TrixDB</AssemblyName>
+    <RootNamespace>TrixDB</RootNamespace>
+
+    <!-- SourceLink for better debugging -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- .NET settings -->
+  <PropertyGroup>
+    <!-- AOT requires source generators for JSON - disabled for now -->
+    <IsTrimmable>false</IsTrimmable>
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+
+</Project>
