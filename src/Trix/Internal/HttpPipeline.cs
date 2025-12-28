@@ -179,6 +179,9 @@ internal sealed class HttpPipeline : IDisposable
     /// <summary>
     /// Sends a multipart form data request for file uploads.
     /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when a retry is needed but the stream is non-seekable.
+    /// </exception>
     public async Task<HttpResponseMessage> SendMultipartAsync(
         string path,
         Stream fileData,
@@ -196,8 +199,8 @@ internal sealed class HttpPipeline : IDisposable
             {
                 using var content = new MultipartFormDataContent();
 
-                // Add file content
-                var streamContent = new StreamContent(fileData);
+                // Add file content - wrap in LeaveOpenStream to prevent disposal
+                var streamContent = new StreamContent(new LeaveOpenStream(fileData));
                 streamContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
                 content.Add(streamContent, "file", fileName);
 
@@ -239,20 +242,40 @@ internal sealed class HttpPipeline : IDisposable
                 lastException = new TrixTimeoutException($"Request timed out after {_options.Timeout}", ex, _options.Timeout);
                 _logger.LogWarning("Request timed out on attempt {Attempt}", attempt + 1);
             }
+            catch (RateLimitException ex)
+            {
+                lastException = ex;
+                if (attempt < _options.MaxRetries && ex.RetryAfterSeconds.HasValue)
+                {
+                    var delay = TimeSpan.FromSeconds(ex.RetryAfterSeconds.Value);
+                    _logger.LogWarning("Rate limited. Waiting {Seconds}s before retry", delay.TotalSeconds);
+                    await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            catch (ServerException ex)
+            {
+                lastException = ex;
+                _logger.LogWarning(ex, "Server error on attempt {Attempt}", attempt + 1);
+            }
             catch (TrixException)
             {
-                throw; // Don't retry client errors
+                throw; // Don't retry client errors (4xx)
             }
 
             attempt++;
 
             if (attempt <= _options.MaxRetries)
             {
-                // Reset stream position for retry
-                if (fileData.CanSeek)
+                // For retries, we need to reset the stream position
+                // If the stream is non-seekable, we cannot retry safely
+                if (!fileData.CanSeek)
                 {
-                    fileData.Position = 0;
+                    throw new InvalidOperationException(
+                        "Cannot retry multipart upload with a non-seekable stream. " +
+                        "Use a seekable stream (e.g., MemoryStream, FileStream) for reliable uploads.");
                 }
+
+                fileData.Position = 0;
 
                 var delay = CalculateBackoff(attempt);
                 _logger.LogDebug("Retrying in {Delay}ms", delay.TotalMilliseconds);
@@ -282,7 +305,11 @@ internal sealed class HttpPipeline : IDisposable
             HttpStatusCode.Unauthorized => new AuthenticationException(message, errorCode, requestId),
             HttpStatusCode.Forbidden => new PermissionException(message, errorCode, requestId),
             HttpStatusCode.NotFound => new NotFoundException(message, errorCode: errorCode, requestId: requestId),
-            HttpStatusCode.UnprocessableEntity => new ValidationException(message, errorCode: errorCode, requestId: requestId),
+            HttpStatusCode.UnprocessableEntity => new ValidationException(
+                message,
+                errors: errorBody?.Errors,
+                errorCode: errorCode,
+                requestId: requestId),
             HttpStatusCode.TooManyRequests => CreateRateLimitException(response, message, errorCode, requestId),
             >= HttpStatusCode.InternalServerError => new ServerException(message, response.StatusCode, errorCode, requestId),
             _ => new TrixException(message, response.StatusCode, errorCode, requestId)
@@ -363,4 +390,40 @@ internal sealed class HttpPipeline : IDisposable
     }
 
     private record ErrorResponse(string? Message, string? Code, Dictionary<string, string[]>? Errors);
+
+    /// <summary>
+    /// A stream wrapper that doesn't dispose the underlying stream when disposed.
+    /// Used to prevent StreamContent from disposing our file stream during retries.
+    /// </summary>
+    private sealed class LeaveOpenStream : Stream
+    {
+        private readonly Stream _inner;
+
+        public LeaveOpenStream(Stream inner) => _inner = inner;
+
+        public override bool CanRead => _inner.CanRead;
+        public override bool CanSeek => _inner.CanSeek;
+        public override bool CanWrite => _inner.CanWrite;
+        public override long Length => _inner.Length;
+        public override long Position
+        {
+            get => _inner.Position;
+            set => _inner.Position = value;
+        }
+
+        public override void Flush() => _inner.Flush();
+        public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, count);
+        public override long Seek(long offset, SeekOrigin origin) => _inner.Seek(offset, origin);
+        public override void SetLength(long value) => _inner.SetLength(value);
+        public override void Write(byte[] buffer, int offset, int count) => _inner.Write(buffer, offset, count);
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => _inner.ReadAsync(buffer, offset, count, cancellationToken);
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            => _inner.ReadAsync(buffer, cancellationToken);
+
+        // Do NOT dispose the inner stream
+        protected override void Dispose(bool disposing) => base.Dispose(disposing);
+    }
 }

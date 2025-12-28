@@ -41,7 +41,7 @@ public abstract class BaseResource
         Dictionary<string, string?>? queryParams = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await _pipeline.SendAsync(
+        using var response = await _pipeline.SendAsync(
             HttpMethod.Get,
             path,
             queryParams: queryParams,
@@ -58,7 +58,7 @@ public abstract class BaseResource
         object? body = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await _pipeline.SendAsync(
+        using var response = await _pipeline.SendAsync(
             HttpMethod.Post,
             path,
             body: body,
@@ -75,7 +75,7 @@ public abstract class BaseResource
         object? body = null,
         CancellationToken cancellationToken = default)
     {
-        await _pipeline.SendAsync(
+        using var response = await _pipeline.SendAsync(
             HttpMethod.Post,
             path,
             body: body,
@@ -90,7 +90,7 @@ public abstract class BaseResource
         object? body = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await _pipeline.SendAsync(
+        using var response = await _pipeline.SendAsync(
             HttpMethod.Put,
             path,
             body: body,
@@ -107,7 +107,7 @@ public abstract class BaseResource
         object? body = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await _pipeline.SendAsync(
+        using var response = await _pipeline.SendAsync(
             new HttpMethod("PATCH"),
             path,
             body: body,
@@ -123,7 +123,7 @@ public abstract class BaseResource
         string path,
         CancellationToken cancellationToken = default)
     {
-        await _pipeline.SendAsync(
+        using var response = await _pipeline.SendAsync(
             HttpMethod.Delete,
             path,
             cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -136,7 +136,7 @@ public abstract class BaseResource
         string path,
         CancellationToken cancellationToken = default)
     {
-        var response = await _pipeline.SendAsync(
+        using var response = await _pipeline.SendAsync(
             HttpMethod.Delete,
             path,
             cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -159,6 +159,7 @@ public abstract class BaseResource
 
     /// <summary>
     /// Makes a GET request and returns the response as a stream.
+    /// The returned stream wraps the response and will dispose it when closed.
     /// </summary>
     protected virtual async Task<Stream> GetStreamAsync(
         string path,
@@ -169,7 +170,10 @@ public abstract class BaseResource
             path,
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
-        return await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+
+        // Return a wrapper that disposes the response when the stream is disposed
+        return new ResponseOwningStream(contentStream, response);
     }
 
     /// <summary>
@@ -183,7 +187,7 @@ public abstract class BaseResource
         Dictionary<string, object>? additionalFields = null,
         CancellationToken cancellationToken = default)
     {
-        var response = await _pipeline.SendMultipartAsync(
+        using var response = await _pipeline.SendMultipartAsync(
             path,
             fileData,
             fileName,
@@ -192,6 +196,69 @@ public abstract class BaseResource
             cancellationToken).ConfigureAwait(false);
 
         return await DeserializeAsync<T>(response, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// A stream wrapper that owns and disposes an HttpResponseMessage when the stream is disposed.
+    /// </summary>
+    private sealed class ResponseOwningStream : Stream
+    {
+        private readonly Stream _innerStream;
+        private readonly HttpResponseMessage _response;
+        private bool _disposed;
+
+        public ResponseOwningStream(Stream innerStream, HttpResponseMessage response)
+        {
+            _innerStream = innerStream;
+            _response = response;
+        }
+
+        public override bool CanRead => _innerStream.CanRead;
+        public override bool CanSeek => _innerStream.CanSeek;
+        public override bool CanWrite => _innerStream.CanWrite;
+        public override long Length => _innerStream.Length;
+        public override long Position
+        {
+            get => _innerStream.Position;
+            set => _innerStream.Position = value;
+        }
+
+        public override void Flush() => _innerStream.Flush();
+        public override int Read(byte[] buffer, int offset, int count) => _innerStream.Read(buffer, offset, count);
+        public override long Seek(long offset, SeekOrigin origin) => _innerStream.Seek(offset, origin);
+        public override void SetLength(long value) => _innerStream.SetLength(value);
+        public override void Write(byte[] buffer, int offset, int count) => _innerStream.Write(buffer, offset, count);
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => _innerStream.ReadAsync(buffer, offset, count, cancellationToken);
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            => _innerStream.ReadAsync(buffer, cancellationToken);
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _innerStream.Dispose();
+                    _response.Dispose();
+                }
+                _disposed = true;
+            }
+            base.Dispose(disposing);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            if (!_disposed)
+            {
+                await _innerStream.DisposeAsync().ConfigureAwait(false);
+                _response.Dispose();
+                _disposed = true;
+            }
+            await base.DisposeAsync().ConfigureAwait(false);
+        }
     }
 
     /// <summary>

@@ -35,75 +35,105 @@ public sealed class TrixClient : IDisposable
     /// </summary>
     public static string ApiVersion => HttpPipeline.ApiVersion;
 
+    // Private backing fields for resources
+    private readonly MemoriesResource _memories;
+    private readonly RelationshipsResource _relationships;
+    private readonly ClustersResource _clusters;
+    private readonly SpacesResource _spaces;
+    private readonly GraphResource _graph;
+    private readonly SearchResource _search;
+    private readonly WebhooksResource _webhooks;
+    private readonly AgentResource _agent;
+    private readonly FeedbackResource _feedback;
+    private readonly HighlightsResource _highlights;
+    private readonly JobsResource _jobs;
+    private readonly FactsResource _facts;
+    private readonly EntitiesResource _entities;
+    private readonly EnrichmentsResource _enrichments;
+
     /// <summary>
     /// Gets the memories resource for managing memories.
     /// </summary>
-    public MemoriesResource Memories { get; }
+    /// <exception cref="ObjectDisposedException">If the client has been disposed.</exception>
+    public MemoriesResource Memories { get { ThrowIfDisposed(); return _memories; } }
 
     /// <summary>
     /// Gets the relationships resource for managing relationships.
     /// </summary>
-    public RelationshipsResource Relationships { get; }
+    /// <exception cref="ObjectDisposedException">If the client has been disposed.</exception>
+    public RelationshipsResource Relationships { get { ThrowIfDisposed(); return _relationships; } }
 
     /// <summary>
     /// Gets the clusters resource for managing clusters.
     /// </summary>
-    public ClustersResource Clusters { get; }
+    /// <exception cref="ObjectDisposedException">If the client has been disposed.</exception>
+    public ClustersResource Clusters { get { ThrowIfDisposed(); return _clusters; } }
 
     /// <summary>
     /// Gets the spaces resource for managing spaces.
     /// </summary>
-    public SpacesResource Spaces { get; }
+    /// <exception cref="ObjectDisposedException">If the client has been disposed.</exception>
+    public SpacesResource Spaces { get { ThrowIfDisposed(); return _spaces; } }
 
     /// <summary>
     /// Gets the graph resource for knowledge graph traversal.
     /// </summary>
-    public GraphResource Graph { get; }
+    /// <exception cref="ObjectDisposedException">If the client has been disposed.</exception>
+    public GraphResource Graph { get { ThrowIfDisposed(); return _graph; } }
 
     /// <summary>
     /// Gets the search resource for semantic search operations.
     /// </summary>
-    public SearchResource Search { get; }
+    /// <exception cref="ObjectDisposedException">If the client has been disposed.</exception>
+    public SearchResource Search { get { ThrowIfDisposed(); return _search; } }
 
     /// <summary>
     /// Gets the webhooks resource for managing webhooks.
     /// </summary>
-    public WebhooksResource Webhooks { get; }
+    /// <exception cref="ObjectDisposedException">If the client has been disposed.</exception>
+    public WebhooksResource Webhooks { get { ThrowIfDisposed(); return _webhooks; } }
 
     /// <summary>
     /// Gets the agent resource for agent sessions and core memory.
     /// </summary>
-    public AgentResource Agent { get; }
+    /// <exception cref="ObjectDisposedException">If the client has been disposed.</exception>
+    public AgentResource Agent { get { ThrowIfDisposed(); return _agent; } }
 
     /// <summary>
     /// Gets the feedback resource for submitting feedback.
     /// </summary>
-    public FeedbackResource Feedback { get; }
+    /// <exception cref="ObjectDisposedException">If the client has been disposed.</exception>
+    public FeedbackResource Feedback { get { ThrowIfDisposed(); return _feedback; } }
 
     /// <summary>
     /// Gets the highlights resource for managing highlights.
     /// </summary>
-    public HighlightsResource Highlights { get; }
+    /// <exception cref="ObjectDisposedException">If the client has been disposed.</exception>
+    public HighlightsResource Highlights { get { ThrowIfDisposed(); return _highlights; } }
 
     /// <summary>
     /// Gets the jobs resource for background job management.
     /// </summary>
-    public JobsResource Jobs { get; }
+    /// <exception cref="ObjectDisposedException">If the client has been disposed.</exception>
+    public JobsResource Jobs { get { ThrowIfDisposed(); return _jobs; } }
 
     /// <summary>
     /// Gets the facts resource for knowledge graph facts.
     /// </summary>
-    public FactsResource Facts { get; }
+    /// <exception cref="ObjectDisposedException">If the client has been disposed.</exception>
+    public FactsResource Facts { get { ThrowIfDisposed(); return _facts; } }
 
     /// <summary>
     /// Gets the entities resource for named entity management.
     /// </summary>
-    public EntitiesResource Entities { get; }
+    /// <exception cref="ObjectDisposedException">If the client has been disposed.</exception>
+    public EntitiesResource Entities { get { ThrowIfDisposed(); return _entities; } }
 
     /// <summary>
     /// Gets the enrichments resource for memory enrichments.
     /// </summary>
-    public EnrichmentsResource Enrichments { get; }
+    /// <exception cref="ObjectDisposedException">If the client has been disposed.</exception>
+    public EnrichmentsResource Enrichments { get { ThrowIfDisposed(); return _enrichments; } }
 
     /// <summary>
     /// Creates a new Trix client with the specified API key.
@@ -136,20 +166,20 @@ public sealed class TrixClient : IDisposable
         _pipeline = new HttpPipeline(options);
 
         // Initialize resources
-        Memories = new MemoriesResource(_pipeline);
-        Relationships = new RelationshipsResource(_pipeline);
-        Clusters = new ClustersResource(_pipeline);
-        Spaces = new SpacesResource(_pipeline);
-        Graph = new GraphResource(_pipeline);
-        Search = new SearchResource(_pipeline);
-        Webhooks = new WebhooksResource(_pipeline);
-        Agent = new AgentResource(_pipeline);
-        Feedback = new FeedbackResource(_pipeline);
-        Highlights = new HighlightsResource(_pipeline);
-        Jobs = new JobsResource(_pipeline);
-        Facts = new FactsResource(_pipeline);
-        Entities = new EntitiesResource(_pipeline);
-        Enrichments = new EnrichmentsResource(_pipeline);
+        _memories = new MemoriesResource(_pipeline);
+        _relationships = new RelationshipsResource(_pipeline);
+        _clusters = new ClustersResource(_pipeline);
+        _spaces = new SpacesResource(_pipeline);
+        _graph = new GraphResource(_pipeline);
+        _search = new SearchResource(_pipeline);
+        _webhooks = new WebhooksResource(_pipeline);
+        _agent = new AgentResource(_pipeline);
+        _feedback = new FeedbackResource(_pipeline);
+        _highlights = new HighlightsResource(_pipeline);
+        _jobs = new JobsResource(_pipeline);
+        _facts = new FactsResource(_pipeline);
+        _entities = new EntitiesResource(_pipeline);
+        _enrichments = new EnrichmentsResource(_pipeline);
 
         _logger.LogInformation("TrixClient initialized (SDK v{Version})", Version);
     }
