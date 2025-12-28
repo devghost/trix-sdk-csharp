@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Initial release of TrixDB SDK for .NET
-- **TrixDBClient**: Main client for API interaction
+- Initial release of Trix SDK for .NET
+- **TrixClient**: Main client for API interaction
   - Support for API key and JWT authentication
   - Configurable timeouts and retry policies
   - Environment variable configuration
@@ -34,11 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fact, Entity for knowledge graph
   - Paginated responses
 - **Exceptions**: Typed exception hierarchy
-  - TrixDBException base class
+  - TrixException base class
   - AuthenticationException, PermissionException
   - NotFoundException, ValidationException
   - RateLimitException, ServerException
-  - NetworkException, TrixDBTimeoutException
+  - NetworkException, TrixTimeoutException
 - **Resilience**: Built-in retry with exponential backoff
 - **Cancellation**: Full CancellationToken support
 - **Logging**: Microsoft.Extensions.Logging integration

@@ -1,0 +1,112 @@
+using System.Runtime.CompilerServices;
+using Trix.Internal;
+using Trix.Models;
+
+namespace Trix.Resources;
+
+/// <summary>
+/// Resource for knowledge graph traversal and analysis.
+/// </summary>
+public class GraphResource : BaseResource
+{
+    /// <summary>
+    /// Initializes a new instance of the GraphResource.
+    /// </summary>
+    internal GraphResource(HttpPipeline pipeline) : base(pipeline)
+    {
+    }
+
+    /// <summary>
+    /// Traverses the knowledge graph from a starting node.
+    /// </summary>
+    /// <param name="request">Traversal parameters.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The traversal result with nodes and edges.</returns>
+    public virtual async Task<GraphTraversalResult> TraverseAsync(
+        TraverseRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return await PostAsync<GraphTraversalResult>("/v1/graph/traverse", request, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Gets contextual information for a memory.
+    /// </summary>
+    /// <param name="request">Context request parameters.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The context result.</returns>
+    public virtual async Task<ContextResult> GetContextAsync(
+        GetContextRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return await PostAsync<ContextResult>("/v1/graph/context", request, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Finds the shortest path between two nodes.
+    /// </summary>
+    /// <param name="sourceId">Source node ID.</param>
+    /// <param name="targetId">Target node ID.</param>
+    /// <param name="relationshipTypes">Relationship types to follow.</param>
+    /// <param name="maxDepth">Maximum depth to search.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The shortest path result.</returns>
+    public virtual async Task<ShortestPathResult> ShortestPathAsync(
+        string sourceId,
+        string targetId,
+        List<string>? relationshipTypes = null,
+        int? maxDepth = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(sourceId);
+        ArgumentException.ThrowIfNullOrEmpty(targetId);
+
+        var request = new
+        {
+            sourceId,
+            targetId,
+            relationshipTypes,
+            maxDepth
+        };
+
+        return await PostAsync<ShortestPathResult>("/v1/graph/shortest-path", request, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Gets the immediate neighbors of a node.
+    /// </summary>
+    /// <param name="nodeId">Node ID.</param>
+    /// <param name="direction">Direction of relationships.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The neighbors result.</returns>
+    public virtual async Task<GraphNeighborsResult> NeighborsAsync(
+        string nodeId,
+        TraversalDirection? direction = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(nodeId);
+
+        var queryParams = BuildQueryParams(
+            ("direction", direction?.ToString().ToLowerInvariant())
+        );
+
+        return await GetAsync<GraphNeighborsResult>($"/v1/graph/nodes/{nodeId}/neighbors", queryParams, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Gets statistics about the knowledge graph.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Graph statistics.</returns>
+    public virtual async Task<GraphStats> GetStatsAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<GraphStats>("/v1/graph/stats", cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+    }
+}

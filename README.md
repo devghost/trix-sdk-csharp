@@ -1,8 +1,8 @@
-# TrixDB SDK for .NET
+# Trix SDK for .NET
 
-The official .NET SDK for [TrixDB](https://trixdb.com) - a memory and knowledge management API.
+The official .NET SDK for [Trix](https://trixdb.com) - a memory and knowledge management API.
 
-[![NuGet](https://img.shields.io/nuget/v/TrixDB.svg)](https://www.nuget.org/packages/TrixDB)
+[![NuGet](https://img.shields.io/nuget/v/Trix.Client.svg)](https://www.nuget.org/packages/Trix.Client)
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue.svg)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -11,33 +11,33 @@ The official .NET SDK for [TrixDB](https://trixdb.com) - a memory and knowledge 
 Install via NuGet:
 
 ```bash
-dotnet add package TrixDB
+dotnet add package Trix.Client
 ```
 
 Or via the Package Manager Console:
 
 ```powershell
-Install-Package TrixDB
+Install-Package Trix.Client
 ```
 
 ## Quick Start
 
 ```csharp
-using TrixDB;
-using TrixDB.Models;
+using Trix;
+using Trix.Models;
 
 // Create client with API key
-using var client = new TrixDBClient("your_api_key");
+using var client = new TrixClient("your_api_key");
 
-// Or from environment variables (TRIXDB_API_KEY)
-using var client = TrixDBClient.FromEnvironment();
+// Or from environment variables (TRIX_API_KEY)
+using var client = TrixClient.FromEnvironment();
 
 // Create a memory
 var memory = await client.Memories.CreateAsync(new CreateMemoryRequest
 {
-    Content = "TrixDB is a powerful memory and knowledge management API.",
+    Content = "Trix is a powerful memory and knowledge management API.",
     Type = MemoryType.Text,
-    Tags = new List<string> { "introduction", "trixdb" }
+    Tags = new List<string> { "introduction", "trix" }
 });
 
 Console.WriteLine($"Created memory: {memory.Id}");
@@ -72,7 +72,7 @@ foreach (var m in results.Data)
 ### Basic Configuration
 
 ```csharp
-var options = new TrixDBClientOptions
+var options = new TrixClientOptions
 {
     ApiKey = "your_api_key",
     BaseUrl = "https://api.trixdb.com",  // Default
@@ -80,14 +80,14 @@ var options = new TrixDBClientOptions
     MaxRetries = 3                         // Default
 };
 
-using var client = new TrixDBClient(options);
+using var client = new TrixClient(options);
 ```
 
 ### Environment Variables
 
 ```csharp
-// Reads from TRIXDB_API_KEY and optionally TRIXDB_BASE_URL
-using var client = TrixDBClient.FromEnvironment();
+// Reads from TRIX_API_KEY and optionally TRIX_BASE_URL
+using var client = TrixClient.FromEnvironment();
 ```
 
 ### Dependency Injection
@@ -96,11 +96,11 @@ using var client = TrixDBClient.FromEnvironment();
 // In Startup.cs or Program.cs
 services.AddSingleton(sp =>
 {
-    var options = new TrixDBClientOptions
+    var options = new TrixClientOptions
     {
-        ApiKey = configuration["TrixDB:ApiKey"]
+        ApiKey = configuration["Trix:ApiKey"]
     };
-    return new TrixDBClient(options);
+    return new TrixClient(options);
 });
 ```
 
@@ -112,7 +112,7 @@ services.AddSingleton(sp =>
 // Create
 var memory = await client.Memories.CreateAsync(new CreateMemoryRequest
 {
-    Content = "Hello, TrixDB!",
+    Content = "Hello, Trix!",
     Type = MemoryType.Text,
     Tags = new List<string> { "greeting" }
 });
@@ -231,9 +231,9 @@ catch (ValidationException ex)
         Console.WriteLine($"  {error.Key}: {string.Join(", ", error.Value)}");
     }
 }
-catch (TrixDBException ex)
+catch (TrixException ex)
 {
-    Console.WriteLine($"TrixDB error: {ex.Message}");
+    Console.WriteLine($"Trix error: {ex.Message}");
     Console.WriteLine($"  Status: {ex.StatusCode}");
     Console.WriteLine($"  Request ID: {ex.RequestId}");
 }
@@ -266,13 +266,13 @@ using Microsoft.Extensions.Logging;
 var loggerFactory = LoggerFactory.Create(builder =>
     builder.AddConsole().SetMinimumLevel(LogLevel.Debug));
 
-var options = new TrixDBClientOptions
+var options = new TrixClientOptions
 {
     ApiKey = "your_api_key",
     LoggerFactory = loggerFactory
 };
 
-using var client = new TrixDBClient(options);
+using var client = new TrixClient(options);
 ```
 
 ## Requirements
@@ -281,8 +281,8 @@ using var client = new TrixDBClient(options);
 
 ## Related SDKs
 
-- [Python SDK](https://github.com/trixdb/trix-sdk-python)
-- [TypeScript SDK](https://github.com/trixdb/trix-sdk-typescript)
+- [Python SDK](https://github.com/trix/trix-sdk-python)
+- [TypeScript SDK](https://github.com/trix/trix-sdk-typescript)
 
 ## License
 

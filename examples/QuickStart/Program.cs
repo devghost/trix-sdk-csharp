@@ -1,16 +1,16 @@
-using TrixDB;
-using TrixDB.Models;
+using Trix;
+using Trix.Models;
 
-Console.WriteLine("TrixDB SDK for .NET - Quick Start Example");
-Console.WriteLine("==========================================");
+Console.WriteLine("Trix SDK for .NET - Quick Start Example");
+Console.WriteLine("========================================");
 
 // Check for API key
-var apiKey = Environment.GetEnvironmentVariable("TRIXDB_API_KEY");
+var apiKey = Environment.GetEnvironmentVariable("TRIX_API_KEY");
 if (string.IsNullOrEmpty(apiKey))
 {
     Console.WriteLine();
-    Console.WriteLine("To run this example, set the TRIXDB_API_KEY environment variable:");
-    Console.WriteLine("  export TRIXDB_API_KEY=your_api_key");
+    Console.WriteLine("To run this example, set the TRIX_API_KEY environment variable:");
+    Console.WriteLine("  export TRIX_API_KEY=your_api_key");
     Console.WriteLine();
     Console.WriteLine("Showing SDK usage examples (not connected to API)...");
     Console.WriteLine();
@@ -19,9 +19,9 @@ if (string.IsNullOrEmpty(apiKey))
 }
 
 // Create client from environment
-using var client = TrixDBClient.FromEnvironment();
+using var client = TrixClient.FromEnvironment();
 
-Console.WriteLine($"Connected to TrixDB (SDK v{TrixDBClient.Version})");
+Console.WriteLine($"Connected to Trix (SDK v{TrixClient.Version})");
 Console.WriteLine();
 
 try
@@ -30,7 +30,7 @@ try
     Console.WriteLine("Creating a memory...");
     var memory = await client.Memories.CreateAsync(new CreateMemoryRequest
     {
-        Content = "The TrixDB SDK for .NET provides a type-safe way to interact with the TrixDB API.",
+        Content = "The Trix SDK for .NET provides a type-safe way to interact with the Trix API.",
         Type = MemoryType.Text,
         Tags = new List<string> { "sdk", "dotnet", "example" }
     });
@@ -73,7 +73,7 @@ try
     await client.Memories.DeleteAsync(memory.Id);
     Console.WriteLine($"Deleted memory: {memory.Id}");
 }
-catch (TrixDB.Exceptions.TrixDBException ex)
+catch (Trix.Exceptions.TrixException ex)
 {
     Console.WriteLine($"Error: {ex.Message}");
     Console.WriteLine($"  Status: {ex.StatusCode}");
@@ -87,16 +87,16 @@ static void ShowExamples()
 {
     Console.WriteLine("Example 1: Create a client");
     Console.WriteLine(@"
-    using var client = new TrixDBClient(""your_api_key"");
+    using var client = new TrixClient(""your_api_key"");
     // or
-    using var client = TrixDBClient.FromEnvironment();
+    using var client = TrixClient.FromEnvironment();
 ");
 
     Console.WriteLine("Example 2: Create a memory");
     Console.WriteLine(@"
     var memory = await client.Memories.CreateAsync(new CreateMemoryRequest
     {
-        Content = ""Hello, TrixDB!"",
+        Content = ""Hello, Trix!"",
         Type = MemoryType.Text,
         Tags = new List<string> { ""greeting"" }
     });
