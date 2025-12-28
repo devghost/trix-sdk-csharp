@@ -189,3 +189,96 @@ public enum SearchMode
     /// <summary>Hybrid search combining semantic and keyword.</summary>
     [JsonPropertyName("hybrid")] Hybrid
 }
+
+/// <summary>
+/// Memory system configuration.
+/// </summary>
+public class MemoryConfig
+{
+    /// <summary>Gets or sets the maximum content length.</summary>
+    [JsonPropertyName("maxContentLength")]
+    public int MaxContentLength { get; set; }
+
+    /// <summary>Gets or sets the supported memory types.</summary>
+    [JsonPropertyName("supportedTypes")]
+    public List<MemoryType>? SupportedTypes { get; set; }
+
+    /// <summary>Gets or sets the maximum tags per memory.</summary>
+    [JsonPropertyName("maxTagsPerMemory")]
+    public int MaxTagsPerMemory { get; set; }
+
+    /// <summary>Gets or sets the maximum audio duration in seconds.</summary>
+    [JsonPropertyName("maxAudioDuration")]
+    public int MaxAudioDuration { get; set; }
+}
+
+/// <summary>
+/// Parameters for getting memory statistics.
+/// </summary>
+public class GetMemoryStatsRequest
+{
+    /// <summary>Gets or sets the space ID filter.</summary>
+    public string? SpaceId { get; set; }
+
+    /// <summary>Gets or sets the created after filter.</summary>
+    public DateTimeOffset? CreatedAfter { get; set; }
+
+    /// <summary>Gets or sets the created before filter.</summary>
+    public DateTimeOffset? CreatedBefore { get; set; }
+
+    /// <summary>Gets or sets whether to include type distribution.</summary>
+    public bool? IncludeTypeDistribution { get; set; }
+
+    /// <summary>Gets or sets whether to include tag distribution.</summary>
+    public bool? IncludeTagDistribution { get; set; }
+
+    /// <summary>Gets or sets whether to include timeline data.</summary>
+    public bool? IncludeTimeline { get; set; }
+
+    /// <summary>Gets or sets the timeline granularity.</summary>
+    public string? TimelineGranularity { get; set; }
+}
+
+/// <summary>
+/// Memory statistics.
+/// </summary>
+public class MemoryStats
+{
+    /// <summary>Gets or sets the total count.</summary>
+    [JsonPropertyName("total")]
+    public int Total { get; set; }
+
+    /// <summary>Gets or sets the count by type.</summary>
+    [JsonPropertyName("byType")]
+    public Dictionary<string, int>? ByType { get; set; }
+
+    /// <summary>Gets or sets the count by tag.</summary>
+    [JsonPropertyName("byTag")]
+    public Dictionary<string, int>? ByTag { get; set; }
+
+    /// <summary>Gets or sets the timeline data.</summary>
+    [JsonPropertyName("timeline")]
+    public List<TimelineEntry>? Timeline { get; set; }
+
+    /// <summary>Gets or sets the average content length.</summary>
+    [JsonPropertyName("avgContentLength")]
+    public double? AvgContentLength { get; set; }
+
+    /// <summary>Gets or sets the total size in bytes.</summary>
+    [JsonPropertyName("totalSize")]
+    public long? TotalSize { get; set; }
+}
+
+/// <summary>
+/// Timeline entry for statistics.
+/// </summary>
+public class TimelineEntry
+{
+    /// <summary>Gets or sets the period.</summary>
+    [JsonPropertyName("period")]
+    public string Period { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the count.</summary>
+    [JsonPropertyName("count")]
+    public int Count { get; set; }
+}

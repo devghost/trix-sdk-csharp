@@ -158,6 +158,43 @@ public abstract class BaseResource
     }
 
     /// <summary>
+    /// Makes a GET request and returns the response as a stream.
+    /// </summary>
+    protected virtual async Task<Stream> GetStreamAsync(
+        string path,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _pipeline.SendAsync(
+            HttpMethod.Get,
+            path,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        return await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Makes a POST request with multipart form data.
+    /// </summary>
+    protected virtual async Task<T> PostMultipartAsync<T>(
+        string path,
+        Stream fileData,
+        string fileName,
+        string contentType,
+        Dictionary<string, object>? additionalFields = null,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _pipeline.SendMultipartAsync(
+            path,
+            fileData,
+            fileName,
+            contentType,
+            additionalFields,
+            cancellationToken).ConfigureAwait(false);
+
+        return await DeserializeAsync<T>(response, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Builds a query string dictionary from optional parameters.
     /// </summary>
     protected static Dictionary<string, string?> BuildQueryParams(params (string key, object? value)[] parameters)

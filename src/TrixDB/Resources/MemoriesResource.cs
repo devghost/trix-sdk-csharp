@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using TrixDB.Internal;
 using TrixDB.Models;
 
@@ -117,6 +118,106 @@ public class MemoriesResource : BaseResource
     }
 
     /// <summary>
+    /// Updates multiple memories in bulk.
+    /// </summary>
+    /// <param name="updates">The updates to apply (id and fields to update).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Bulk operation result.</returns>
+    public virtual async Task<BulkResult> BulkUpdateAsync(
+        IEnumerable<BulkUpdateItem> updates,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(updates);
+        return await PostAsync<BulkResult>($"{BasePath}/bulk-update", new { updates = updates.ToList() }, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Deletes multiple memories in bulk.
+    /// </summary>
+    /// <param name="ids">The memory IDs to delete.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Bulk operation result.</returns>
+    public virtual async Task<BulkResult> BulkDeleteAsync(
+        IEnumerable<string> ids,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+        return await PostAsync<BulkResult>($"{BasePath}/bulk-delete", new { ids = ids.ToList() }, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Gets the audio stream for a memory.
+    /// </summary>
+    /// <param name="id">The memory ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Audio stream.</returns>
+    public virtual async Task<Stream> GetAudioAsync(
+        string id,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        return await GetStreamAsync($"{BasePath}/{id}/audio", cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Gets the transcript for an audio memory.
+    /// </summary>
+    /// <param name="id">The memory ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Transcript result.</returns>
+    public virtual async Task<TranscriptResult> GetTranscriptAsync(
+        string id,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        return await GetAsync<TranscriptResult>($"{BasePath}/{id}/transcript", cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Transcribes an audio memory.
+    /// </summary>
+    /// <param name="id">The memory ID.</param>
+    /// <param name="request">Transcription options.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Transcript result.</returns>
+    public virtual async Task<TranscriptResult> TranscribeAsync(
+        string id,
+        TranscribeRequest? request = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        return await PostAsync<TranscriptResult>($"{BasePath}/{id}/transcribe", request, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Creates a memory from audio data.
+    /// </summary>
+    /// <param name="audioData">The audio data stream.</param>
+    /// <param name="fileName">The file name.</param>
+    /// <param name="contentType">The content type (e.g., audio/mpeg).</param>
+    /// <param name="metadata">Optional metadata.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The created memory.</returns>
+    public virtual async Task<Memory> CreateFromAudioAsync(
+        Stream audioData,
+        string fileName,
+        string contentType = "audio/mpeg",
+        Dictionary<string, object>? metadata = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(audioData);
+        ArgumentException.ThrowIfNullOrEmpty(fileName);
+
+        return await PostMultipartAsync<Memory>(
+            $"{BasePath}/audio",
+            audioData,
+            fileName,
+            contentType,
+            metadata,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Iterates through all memories matching the criteria.
     /// </summary>
     /// <param name="request">Optional filter parameters.</param>
@@ -147,31 +248,113 @@ public class MemoriesResource : BaseResource
             request.Page++;
         }
     }
+
+    /// <summary>
+    /// Gets the memory system configuration.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Memory configuration.</returns>
+    public virtual async Task<MemoryConfig> GetConfigAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<MemoryConfig>($"{BasePath}/config", cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Gets memory statistics.
+    /// </summary>
+    /// <param name="request">Statistics parameters.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Memory statistics.</returns>
+    public virtual async Task<MemoryStats> GetStatsAsync(
+        GetMemoryStatsRequest? request = null,
+        CancellationToken cancellationToken = default)
+    {
+        var queryParams = new Dictionary<string, string?>();
+
+        if (request != null)
+        {
+            if (request.SpaceId != null) queryParams["spaceId"] = request.SpaceId;
+            if (request.CreatedAfter != null) queryParams["createdAfter"] = request.CreatedAfter.Value.ToString("O");
+            if (request.CreatedBefore != null) queryParams["createdBefore"] = request.CreatedBefore.Value.ToString("O");
+            if (request.IncludeTypeDistribution != null) queryParams["includeTypeDistribution"] = request.IncludeTypeDistribution.Value.ToString().ToLowerInvariant();
+            if (request.IncludeTagDistribution != null) queryParams["includeTagDistribution"] = request.IncludeTagDistribution.Value.ToString().ToLowerInvariant();
+            if (request.IncludeTimeline != null) queryParams["includeTimeline"] = request.IncludeTimeline.Value.ToString().ToLowerInvariant();
+            if (request.TimelineGranularity != null) queryParams["timelineGranularity"] = request.TimelineGranularity;
+        }
+
+        return await GetAsync<MemoryStats>($"{BasePath}/stats", queryParams, cancellationToken).ConfigureAwait(false);
+    }
 }
 
 /// <summary>
-/// Result of a bulk operation.
+/// Item for bulk update operation.
 /// </summary>
-public class BulkResult
+public class BulkUpdateItem
 {
-    /// <summary>Gets or sets the number of successful operations.</summary>
-    public int Success { get; set; }
+    /// <summary>Gets or sets the memory ID.</summary>
+    public required string Id { get; set; }
 
-    /// <summary>Gets or sets the number of failed operations.</summary>
-    public int Failed { get; set; }
+    /// <summary>Gets or sets the content to update.</summary>
+    public string? Content { get; set; }
 
-    /// <summary>Gets or sets any errors that occurred.</summary>
-    public List<BulkError>? Errors { get; set; }
+    /// <summary>Gets or sets the metadata to update.</summary>
+    public Dictionary<string, object>? Metadata { get; set; }
+
+    /// <summary>Gets or sets tags to update.</summary>
+    public List<string>? Tags { get; set; }
 }
 
 /// <summary>
-/// Error from a bulk operation.
+/// Result of transcription.
 /// </summary>
-public class BulkError
+public class TranscriptResult
 {
-    /// <summary>Gets or sets the index of the failed item.</summary>
-    public int Index { get; set; }
+    /// <summary>Gets or sets the memory ID.</summary>
+    public string MemoryId { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the error message.</summary>
-    public required string Message { get; set; }
+    /// <summary>Gets or sets the transcript text.</summary>
+    public string Text { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the duration in seconds.</summary>
+    public double? Duration { get; set; }
+
+    /// <summary>Gets or sets the language detected.</summary>
+    public string? Language { get; set; }
+
+    /// <summary>Gets or sets word-level timestamps.</summary>
+    public List<WordTimestamp>? Words { get; set; }
+}
+
+/// <summary>
+/// Word with timestamp.
+/// </summary>
+public class WordTimestamp
+{
+    /// <summary>Gets or sets the word.</summary>
+    public string Word { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the start time in seconds.</summary>
+    public double Start { get; set; }
+
+    /// <summary>Gets or sets the end time in seconds.</summary>
+    public double End { get; set; }
+
+    /// <summary>Gets or sets the confidence score.</summary>
+    public double? Confidence { get; set; }
+}
+
+/// <summary>
+/// Request for transcription.
+/// </summary>
+public class TranscribeRequest
+{
+    /// <summary>Gets or sets the language hint.</summary>
+    public string? Language { get; set; }
+
+    /// <summary>Gets or sets whether to include word timestamps.</summary>
+    public bool IncludeWordTimestamps { get; set; }
+
+    /// <summary>Gets or sets whether to update the memory content with transcript.</summary>
+    public bool UpdateContent { get; set; }
 }

@@ -165,3 +165,57 @@ public class EntityMatch
     [JsonPropertyName("confidence")]
     public double Confidence { get; set; }
 }
+
+/// <summary>
+/// An extracted entity from a memory.
+/// </summary>
+public class ExtractedEntity
+{
+    /// <summary>Gets or sets the entity name.</summary>
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the entity type.</summary>
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the extraction confidence.</summary>
+    [JsonPropertyName("confidence")]
+    public double Confidence { get; set; }
+
+    /// <summary>Gets or sets the text span in the source.</summary>
+    [JsonPropertyName("span")]
+    public string? Span { get; set; }
+}
+
+/// <summary>
+/// Result of entity extraction.
+/// </summary>
+public class EntityExtractionResult
+{
+    /// <summary>Gets or sets the memory ID.</summary>
+    [JsonPropertyName("memoryId")]
+    public string MemoryId { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the extracted entities.</summary>
+    [JsonPropertyName("entities")]
+    public List<ExtractedEntity> Entities { get; set; } = new();
+
+    /// <summary>Gets or sets the saved entity IDs.</summary>
+    [JsonPropertyName("savedIds")]
+    public List<string>? SavedIds { get; set; }
+}
+
+/// <summary>
+/// Information about an entity type.
+/// </summary>
+public class EntityTypeInfo
+{
+    /// <summary>Gets or sets the type name.</summary>
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the count of entities of this type.</summary>
+    [JsonPropertyName("count")]
+    public int Count { get; set; }
+}

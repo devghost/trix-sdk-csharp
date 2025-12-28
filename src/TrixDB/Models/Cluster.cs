@@ -139,3 +139,119 @@ public class MemorySuggestion
     [JsonPropertyName("confidence")]
     public double Confidence { get; set; }
 }
+
+/// <summary>
+/// Cluster statistics.
+/// </summary>
+public class ClusterStats
+{
+    /// <summary>Gets or sets the total cluster count.</summary>
+    [JsonPropertyName("total")]
+    public int Total { get; set; }
+
+    /// <summary>Gets or sets the average cluster size.</summary>
+    [JsonPropertyName("avgSize")]
+    public double AvgSize { get; set; }
+
+    /// <summary>Gets or sets the largest cluster size.</summary>
+    [JsonPropertyName("maxSize")]
+    public int MaxSize { get; set; }
+
+    /// <summary>Gets or sets the smallest cluster size.</summary>
+    [JsonPropertyName("minSize")]
+    public int MinSize { get; set; }
+
+    /// <summary>Gets or sets the total memories in clusters.</summary>
+    [JsonPropertyName("totalMemories")]
+    public int TotalMemories { get; set; }
+}
+
+/// <summary>
+/// Cluster quality metrics.
+/// </summary>
+public class ClusterQuality
+{
+    /// <summary>Gets or sets the cluster ID.</summary>
+    [JsonPropertyName("clusterId")]
+    public string ClusterId { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the cohesion score.</summary>
+    [JsonPropertyName("cohesion")]
+    public double Cohesion { get; set; }
+
+    /// <summary>Gets or sets the separation score.</summary>
+    [JsonPropertyName("separation")]
+    public double Separation { get; set; }
+
+    /// <summary>Gets or sets the silhouette score.</summary>
+    [JsonPropertyName("silhouette")]
+    public double Silhouette { get; set; }
+}
+
+/// <summary>
+/// Cluster topics.
+/// </summary>
+public class ClusterTopics
+{
+    /// <summary>Gets or sets the cluster ID.</summary>
+    [JsonPropertyName("clusterId")]
+    public string ClusterId { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the topics.</summary>
+    [JsonPropertyName("topics")]
+    public List<TopicInfo> Topics { get; set; } = new();
+}
+
+/// <summary>
+/// Topic information.
+/// </summary>
+public class TopicInfo
+{
+    /// <summary>Gets or sets the topic name.</summary>
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the topic weight.</summary>
+    [JsonPropertyName("weight")]
+    public double Weight { get; set; }
+
+    /// <summary>Gets or sets related keywords.</summary>
+    [JsonPropertyName("keywords")]
+    public List<string>? Keywords { get; set; }
+}
+
+/// <summary>
+/// Parameters for incremental clustering.
+/// </summary>
+public class IncrementalClusterRequest
+{
+    /// <summary>Gets or sets the space ID filter.</summary>
+    [JsonPropertyName("spaceId")]
+    public string? SpaceId { get; set; }
+
+    /// <summary>Gets or sets the similarity threshold.</summary>
+    [JsonPropertyName("threshold")]
+    public double? Threshold { get; set; }
+
+    /// <summary>Gets or sets the maximum clusters to create.</summary>
+    [JsonPropertyName("maxClusters")]
+    public int? MaxClusters { get; set; }
+}
+
+/// <summary>
+/// Result of incremental clustering.
+/// </summary>
+public class IncrementalClusterResult
+{
+    /// <summary>Gets or sets the number of new clusters created.</summary>
+    [JsonPropertyName("clustersCreated")]
+    public int ClustersCreated { get; set; }
+
+    /// <summary>Gets or sets the number of memories assigned.</summary>
+    [JsonPropertyName("memoriesAssigned")]
+    public int MemoriesAssigned { get; set; }
+
+    /// <summary>Gets or sets the cluster IDs affected.</summary>
+    [JsonPropertyName("clusterIds")]
+    public List<string> ClusterIds { get; set; } = new();
+}

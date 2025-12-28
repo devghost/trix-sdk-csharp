@@ -13,10 +13,26 @@ public class ClientTests
 
         // Assert
         client.Should().NotBeNull();
+
+        // Core resources
         client.Memories.Should().NotBeNull();
         client.Relationships.Should().NotBeNull();
         client.Clusters.Should().NotBeNull();
         client.Spaces.Should().NotBeNull();
+
+        // Knowledge graph resources
+        client.Graph.Should().NotBeNull();
+        client.Facts.Should().NotBeNull();
+        client.Entities.Should().NotBeNull();
+
+        // Additional resources
+        client.Search.Should().NotBeNull();
+        client.Webhooks.Should().NotBeNull();
+        client.Agent.Should().NotBeNull();
+        client.Feedback.Should().NotBeNull();
+        client.Highlights.Should().NotBeNull();
+        client.Jobs.Should().NotBeNull();
+        client.Enrichments.Should().NotBeNull();
     }
 
     [Fact]

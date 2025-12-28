@@ -176,6 +176,93 @@ internal sealed class HttpPipeline : IDisposable
         throw lastException ?? new TrixDBException("Request failed after all retries");
     }
 
+    /// <summary>
+    /// Sends a multipart form data request for file uploads.
+    /// </summary>
+    public async Task<HttpResponseMessage> SendMultipartAsync(
+        string path,
+        Stream fileData,
+        string fileName,
+        string contentType,
+        Dictionary<string, object>? additionalFields = null,
+        CancellationToken cancellationToken = default)
+    {
+        var attempt = 0;
+        Exception? lastException = null;
+
+        while (attempt <= _options.MaxRetries)
+        {
+            try
+            {
+                using var content = new MultipartFormDataContent();
+
+                // Add file content
+                var streamContent = new StreamContent(fileData);
+                streamContent.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+                content.Add(streamContent, "file", fileName);
+
+                // Add additional form fields
+                if (additionalFields != null)
+                {
+                    foreach (var (key, value) in additionalFields)
+                    {
+                        if (value != null)
+                        {
+                            var jsonValue = JsonSerializer.Serialize(value, JsonOptions);
+                            content.Add(new StringContent(jsonValue), key);
+                        }
+                    }
+                }
+
+                using var request = new HttpRequestMessage(HttpMethod.Post, path)
+                {
+                    Content = content
+                };
+
+                _logger.LogDebug("Multipart Request: POST {Path} (attempt {Attempt})", path, attempt + 1);
+
+                var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+                _logger.LogDebug("Response: {StatusCode} from {Path}", (int)response.StatusCode, path);
+
+                await HandleResponseAsync(response, cancellationToken).ConfigureAwait(false);
+
+                return response;
+            }
+            catch (HttpRequestException ex)
+            {
+                lastException = new NetworkException($"Network error: {ex.Message}", ex);
+                _logger.LogWarning(ex, "Network error on attempt {Attempt}", attempt + 1);
+            }
+            catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+            {
+                lastException = new TrixDBTimeoutException($"Request timed out after {_options.Timeout}", ex, _options.Timeout);
+                _logger.LogWarning("Request timed out on attempt {Attempt}", attempt + 1);
+            }
+            catch (TrixDBException)
+            {
+                throw; // Don't retry client errors
+            }
+
+            attempt++;
+
+            if (attempt <= _options.MaxRetries)
+            {
+                // Reset stream position for retry
+                if (fileData.CanSeek)
+                {
+                    fileData.Position = 0;
+                }
+
+                var delay = CalculateBackoff(attempt);
+                _logger.LogDebug("Retrying in {Delay}ms", delay.TotalMilliseconds);
+                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        throw lastException ?? new TrixDBException("Request failed after all retries");
+    }
+
     private async Task HandleResponseAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
         if (response.IsSuccessStatusCode)

@@ -56,6 +56,56 @@ public sealed class TrixDBClient : IDisposable
     public SpacesResource Spaces { get; }
 
     /// <summary>
+    /// Gets the graph resource for knowledge graph traversal.
+    /// </summary>
+    public GraphResource Graph { get; }
+
+    /// <summary>
+    /// Gets the search resource for semantic search operations.
+    /// </summary>
+    public SearchResource Search { get; }
+
+    /// <summary>
+    /// Gets the webhooks resource for managing webhooks.
+    /// </summary>
+    public WebhooksResource Webhooks { get; }
+
+    /// <summary>
+    /// Gets the agent resource for agent sessions and core memory.
+    /// </summary>
+    public AgentResource Agent { get; }
+
+    /// <summary>
+    /// Gets the feedback resource for submitting feedback.
+    /// </summary>
+    public FeedbackResource Feedback { get; }
+
+    /// <summary>
+    /// Gets the highlights resource for managing highlights.
+    /// </summary>
+    public HighlightsResource Highlights { get; }
+
+    /// <summary>
+    /// Gets the jobs resource for background job management.
+    /// </summary>
+    public JobsResource Jobs { get; }
+
+    /// <summary>
+    /// Gets the facts resource for knowledge graph facts.
+    /// </summary>
+    public FactsResource Facts { get; }
+
+    /// <summary>
+    /// Gets the entities resource for named entity management.
+    /// </summary>
+    public EntitiesResource Entities { get; }
+
+    /// <summary>
+    /// Gets the enrichments resource for memory enrichments.
+    /// </summary>
+    public EnrichmentsResource Enrichments { get; }
+
+    /// <summary>
     /// Creates a new TrixDB client with the specified API key.
     /// </summary>
     /// <param name="apiKey">The API key for authentication.</param>
@@ -90,6 +140,16 @@ public sealed class TrixDBClient : IDisposable
         Relationships = new RelationshipsResource(_pipeline);
         Clusters = new ClustersResource(_pipeline);
         Spaces = new SpacesResource(_pipeline);
+        Graph = new GraphResource(_pipeline);
+        Search = new SearchResource(_pipeline);
+        Webhooks = new WebhooksResource(_pipeline);
+        Agent = new AgentResource(_pipeline);
+        Feedback = new FeedbackResource(_pipeline);
+        Highlights = new HighlightsResource(_pipeline);
+        Jobs = new JobsResource(_pipeline);
+        Facts = new FactsResource(_pipeline);
+        Entities = new EntitiesResource(_pipeline);
+        Enrichments = new EnrichmentsResource(_pipeline);
 
         _logger.LogInformation("TrixDBClient initialized (SDK v{Version})", Version);
     }

@@ -1,0 +1,85 @@
+using TrixDB.Internal;
+using TrixDB.Models;
+
+namespace TrixDB.Resources;
+
+/// <summary>
+/// Resource for semantic search and embedding operations.
+/// </summary>
+public class SearchResource : BaseResource
+{
+    /// <summary>
+    /// Initializes a new instance of the SearchResource.
+    /// </summary>
+    internal SearchResource(HttpPipeline pipeline) : base(pipeline)
+    {
+    }
+
+    /// <summary>
+    /// Finds memories similar to a given memory.
+    /// </summary>
+    /// <param name="memoryId">Memory ID to find similar memories for.</param>
+    /// <param name="request">Search parameters.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Similar memories with similarity scores.</returns>
+    public virtual async Task<SimilarityResult> SimilarAsync(
+        string memoryId,
+        SimilarRequest? request = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(memoryId);
+
+        var queryParams = BuildQueryParams(
+            ("limit", request?.Limit),
+            ("threshold", request?.Threshold),
+            ("includeEmbedding", request?.IncludeEmbedding),
+            ("spaceId", request?.SpaceId)
+        );
+
+        return await GetAsync<SimilarityResult>($"/v1/search/similar/{memoryId}", queryParams, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Generates embeddings for specific memories.
+    /// </summary>
+    /// <param name="memoryIds">Memory IDs to generate embeddings for.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The embeddings for the memories.</returns>
+    public virtual async Task<EmbedResult> EmbedAsync(
+        IEnumerable<string> memoryIds,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(memoryIds);
+
+        var request = new { memoryIds = memoryIds.ToList() };
+        return await PostAsync<EmbedResult>("/v1/search/embed", request, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Triggers embedding generation for all memories that need it.
+    /// </summary>
+    /// <param name="batchSize">Batch size for processing.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The batch embedding result.</returns>
+    public virtual async Task<EmbedAllResult> EmbedAllAsync(
+        int? batchSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        var request = batchSize.HasValue ? new { batchSize = batchSize.Value } : null;
+        return await PostAsync<EmbedAllResult>("/v1/search/embed-all", request, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Gets the search system configuration.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The search configuration.</returns>
+    public virtual async Task<SearchConfig> GetConfigAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<SearchConfig>("/v1/search/config", cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+    }
+}

@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using TrixDB.Internal;
 using TrixDB.Models;
 
@@ -137,4 +138,147 @@ public class ClustersResource : BaseResource
         var queryParams = BuildQueryParams(("limit", limit), ("threshold", threshold));
         return await GetAsync<ExpandResult>($"{BasePath}/{clusterId}/expand", queryParams, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// Iterates through all clusters matching the criteria.
+    /// </summary>
+    public virtual async IAsyncEnumerable<Cluster> ListAllAsync(
+        ListClustersRequest? request = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        request ??= new ListClustersRequest();
+        request.Limit ??= 100;
+        request.Page ??= 1;
+
+        while (true)
+        {
+            var response = await ListAsync(request, cancellationToken).ConfigureAwait(false);
+
+            foreach (var cluster in response.Data)
+            {
+                yield return cluster;
+            }
+
+            if (response.Pagination?.HasMore != true || response.Data.Count == 0)
+            {
+                break;
+            }
+
+            request.Page++;
+        }
+    }
+
+    /// <summary>
+    /// Creates multiple clusters in bulk.
+    /// </summary>
+    public virtual async Task<BulkResult> BulkCreateAsync(
+        IEnumerable<CreateClusterRequest> clusters,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(clusters);
+        return await PostAsync<BulkResult>($"{BasePath}/bulk", new { clusters = clusters.ToList() }, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Updates multiple clusters in bulk.
+    /// </summary>
+    public virtual async Task<BulkResult> BulkUpdateAsync(
+        IEnumerable<BulkClusterUpdateItem> updates,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(updates);
+        return await PatchAsync<BulkResult>($"{BasePath}/bulk", new { updates = updates.ToList() }, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Deletes multiple clusters in bulk.
+    /// </summary>
+    public virtual async Task<BulkResult> BulkDeleteAsync(
+        IEnumerable<string> ids,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+        return await PostAsync<BulkResult>($"{BasePath}/bulk-delete", new { ids = ids.ToList() }, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Gets cluster statistics.
+    /// </summary>
+    public virtual async Task<ClusterStats> GetStatsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<ClusterStats>($"{BasePath}/stats", cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Triggers incremental clustering.
+    /// </summary>
+    public virtual async Task<IncrementalClusterResult> IncrementalClusteringAsync(
+        IncrementalClusterRequest? request = null,
+        CancellationToken cancellationToken = default)
+    {
+        return await PostAsync<IncrementalClusterResult>($"{BasePath}/incremental", request, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Refreshes quality metrics for a cluster.
+    /// </summary>
+    public virtual async Task<Cluster> RefreshMetricsAsync(
+        string clusterId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(clusterId);
+        return await PostAsync<Cluster>($"{BasePath}/{clusterId}/refresh-metrics", null, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Recomputes the centroid for a cluster.
+    /// </summary>
+    public virtual async Task<Cluster> RecomputeCentroidAsync(
+        string clusterId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(clusterId);
+        return await PostAsync<Cluster>($"{BasePath}/{clusterId}/recompute-centroid", null, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Gets quality metrics for a cluster.
+    /// </summary>
+    public virtual async Task<ClusterQuality> GetQualityAsync(
+        string clusterId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(clusterId);
+        return await GetAsync<ClusterQuality>($"{BasePath}/{clusterId}/quality", cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Gets topics for a cluster.
+    /// </summary>
+    public virtual async Task<ClusterTopics> GetTopicsAsync(
+        string clusterId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(clusterId);
+        return await GetAsync<ClusterTopics>($"{BasePath}/{clusterId}/topics", cancellationToken: cancellationToken).ConfigureAwait(false);
+    }
+}
+
+/// <summary>
+/// Item for bulk cluster update operation.
+/// </summary>
+public class BulkClusterUpdateItem
+{
+    /// <summary>Gets or sets the cluster ID.</summary>
+    public required string Id { get; set; }
+
+    /// <summary>Gets or sets the name to update.</summary>
+    public string? Name { get; set; }
+
+    /// <summary>Gets or sets the description to update.</summary>
+    public string? Description { get; set; }
+
+    /// <summary>Gets or sets metadata to update.</summary>
+    public Dictionary<string, object>? Metadata { get; set; }
 }

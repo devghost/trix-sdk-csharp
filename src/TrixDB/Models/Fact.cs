@@ -157,3 +157,111 @@ public class ScoredFact : Fact
     [JsonPropertyName("score")]
     public double Score { get; set; }
 }
+
+/// <summary>
+/// Parameters for updating a fact.
+/// </summary>
+public class UpdateFactRequest
+{
+    /// <summary>Gets or sets the subject.</summary>
+    [JsonPropertyName("subject")]
+    public string? Subject { get; set; }
+
+    /// <summary>Gets or sets the predicate.</summary>
+    [JsonPropertyName("predicate")]
+    public string? Predicate { get; set; }
+
+    /// <summary>Gets or sets the object.</summary>
+    [JsonPropertyName("object")]
+    public string? Object { get; set; }
+
+    /// <summary>Gets or sets the subject type.</summary>
+    [JsonPropertyName("subjectType")]
+    public FactNodeType? SubjectType { get; set; }
+
+    /// <summary>Gets or sets the object type.</summary>
+    [JsonPropertyName("objectType")]
+    public FactNodeType? ObjectType { get; set; }
+
+    /// <summary>Gets or sets the confidence score.</summary>
+    [JsonPropertyName("confidence")]
+    public double? Confidence { get; set; }
+
+    /// <summary>Gets or sets the valid from date.</summary>
+    [JsonPropertyName("validFrom")]
+    public DateTimeOffset? ValidFrom { get; set; }
+
+    /// <summary>Gets or sets the valid to date.</summary>
+    [JsonPropertyName("validTo")]
+    public DateTimeOffset? ValidTo { get; set; }
+
+    /// <summary>Gets or sets additional metadata.</summary>
+    [JsonPropertyName("metadata")]
+    public Dictionary<string, object>? Metadata { get; set; }
+}
+
+/// <summary>
+/// An extracted fact from a memory.
+/// </summary>
+public class ExtractedFact
+{
+    /// <summary>Gets or sets the subject.</summary>
+    [JsonPropertyName("subject")]
+    public string Subject { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the predicate.</summary>
+    [JsonPropertyName("predicate")]
+    public string Predicate { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the object.</summary>
+    [JsonPropertyName("object")]
+    public string Object { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the confidence.</summary>
+    [JsonPropertyName("confidence")]
+    public double Confidence { get; set; }
+}
+
+/// <summary>
+/// Result of fact extraction.
+/// </summary>
+public class FactExtractionResult
+{
+    /// <summary>Gets or sets the memory ID.</summary>
+    [JsonPropertyName("memoryId")]
+    public string MemoryId { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the extracted facts.</summary>
+    [JsonPropertyName("facts")]
+    public List<ExtractedFact> Facts { get; set; } = new();
+
+    /// <summary>Gets or sets the saved fact IDs.</summary>
+    [JsonPropertyName("savedIds")]
+    public List<string>? SavedIds { get; set; }
+}
+
+/// <summary>
+/// Result of fact verification.
+/// </summary>
+public class FactVerificationResult
+{
+    /// <summary>Gets or sets the fact ID.</summary>
+    [JsonPropertyName("factId")]
+    public string FactId { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets whether the fact was verified.</summary>
+    [JsonPropertyName("verified")]
+    public bool Verified { get; set; }
+
+    /// <summary>Gets or sets the verification confidence.</summary>
+    [JsonPropertyName("confidence")]
+    public double Confidence { get; set; }
+
+    /// <summary>Gets or sets supporting memory IDs.</summary>
+    [JsonPropertyName("supportingMemories")]
+    public List<string>? SupportingMemories { get; set; }
+
+    /// <summary>Gets or sets contradicting memory IDs.</summary>
+    [JsonPropertyName("contradictingMemories")]
+    public List<string>? ContradictingMemories { get; set; }
+}
