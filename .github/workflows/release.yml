@@ -1,0 +1,244 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - 'csharp-v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  # Pre-release quality checks
+  quality-checks:
+    name: Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Check code formatting
+        run: dotnet format --verify-no-changes --verbosity diagnostic
+
+      - name: Run tests
+        run: dotnet test --configuration Release --no-build --verbosity normal
+
+      - name: Check for vulnerable dependencies
+        run: |
+          dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable.txt
+          if grep -q "has the following vulnerable packages" vulnerable.txt; then
+            echo "::error::Vulnerable dependencies found"
+            exit 1
+          fi
+
+  # Build and pack NuGet package
+  build:
+    name: Build & Pack
+    needs: quality-checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Extract version from tag
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            # Remove 'v' or 'csharp-v' prefix from tag
+            VERSION=${GITHUB_REF#refs/tags/}
+            VERSION=${VERSION#v}
+            VERSION=${VERSION#csharp-v}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Releasing version: $VERSION"
+
+      - name: Verify version matches csproj
+        run: |
+          CSPROJ_VERSION=$(grep -oP '<Version>\K[^<]+' src/Trix/Trix.csproj)
+          TAG_VERSION="${{ steps.get_version.outputs.version }}"
+          if [ "$CSPROJ_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Version mismatch! Trix.csproj: $CSPROJ_VERSION, Tag: $TAG_VERSION"
+            exit 1
+          fi
+          echo "Version verified: $CSPROJ_VERSION"
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test --configuration Release --no-build --verbosity normal
+
+      - name: Pack NuGet package
+        run: dotnet pack src/Trix/Trix.csproj --configuration Release --no-build --output ./artifacts
+
+      - name: Upload NuGet artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts/*.nupkg
+          retention-days: 7
+
+  # Publish to NuGet.org
+  publish-nuget:
+    name: Publish to NuGet
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: nuget
+      url: https://www.nuget.org/packages/Trix
+    steps:
+      - name: Download NuGet artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish to NuGet.org
+        run: |
+          dotnet nuget push ./artifacts/*.nupkg \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+
+  # Create GitHub Release
+  create-release:
+    name: Create GitHub Release
+    needs: publish-nuget
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+            VERSION=${VERSION#v}
+            VERSION=${VERSION#csharp-v}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          # Extract changelog section for this version
+          if [ -f CHANGELOG.md ]; then
+            CHANGELOG=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d')
+            if [ -z "$CHANGELOG" ]; then
+              echo "changelog=No changelog entry found for version $VERSION" >> $GITHUB_OUTPUT
+            else
+              # Use EOF delimiter for multiline content
+              echo "changelog<<EOF" >> $GITHUB_OUTPUT
+              echo "$CHANGELOG" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "changelog=No CHANGELOG.md found" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download NuGet artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: C# SDK v${{ steps.get_version.outputs.version }}
+          body: |
+            ## Trix C# SDK v${{ steps.get_version.outputs.version }}
+
+            ${{ steps.changelog.outputs.changelog }}
+
+            ## Installation
+
+            ### .NET CLI
+            ```bash
+            dotnet add package Trix --version ${{ steps.get_version.outputs.version }}
+            ```
+
+            ### Package Manager Console
+            ```powershell
+            Install-Package Trix -Version ${{ steps.get_version.outputs.version }}
+            ```
+
+            ### PackageReference
+            ```xml
+            <PackageReference Include="Trix" Version="${{ steps.get_version.outputs.version }}" />
+            ```
+
+            ## What's Changed
+
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for full details.
+
+            ## NuGet
+
+            📦 https://www.nuget.org/packages/Trix/${{ steps.get_version.outputs.version }}
+          files: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Notify on completion
+  notify-success:
+    name: Notify Success
+    needs: create-release
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: Extract version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+            VERSION=${VERSION#v}
+            VERSION=${VERSION#csharp-v}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Success message
+        run: |
+          echo "✅ C# SDK v${{ steps.get_version.outputs.version }} released successfully!"
+          echo "📦 NuGet: https://www.nuget.org/packages/Trix/${{ steps.get_version.outputs.version }}"
+          echo "🎉 GitHub Release: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.get_version.outputs.version }}"
